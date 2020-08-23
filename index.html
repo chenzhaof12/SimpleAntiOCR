@@ -2,24 +2,79 @@
 <html>
 <head>
 	<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0;" />
 	<title>ANTI TEXT DETECTIVE</title>
 	<script type="text/javascript" src="jimp.min.js"></script>
 </head>
 <body>
-	<input type="file" id="upload" accept="image/png, image/jpeg" onchange="getImageData();">
-	<img id="preview" width="50%" style="display: none;">
+	<div class="line-show">
+		<span>上传需转换图片</span>
+		<input type="file" id="upload" accept="image/png, image/jpeg" onchange="getImageData();">
+	</div>
+	<div class="line-show"> 
+		<span>文字默认颜色:</span>
+		<div id="defaultTextColor" class="defaultTextColor"></div>
+		<span>背景默认颜色:</span>
+		<div id="defaultBgColor" class="defaultBgColor"></div>
+	</div>
+	<div class="color-board">
+		<div>
+			自行调色：
+			<button onclick="dealImg()">生成</button>
+		</div>
+		<div class="line-show">
+			<span>文字颜色：</span>
+			<input type="color" id="textColor" value="#FF0000" onchange="setTextColor();">
+			<span>灰度值：</span>
+			<span id="greyValue">76.24</span>
+		</div>
+		<div class="line-show">
+			背景颜色：
+			<div id="bgColor" class="bgColor"></div>
+		</div>
+		<div class="line-show">
+			<span>蓝色值（B）：</span>
+			<input type="number" id="blueValue" min="0" max="255" value="76" onchange="setBgBlueValue();">
+			<span id="blueRange">范围0~255</span>
+		</div>
+		<div class="line-show">
+			<span>红色值（R）：</span>
+			<input type="number" id="redValue" min="0" max="255" value="76" onchange="setBgRedValue();">
+			<span id="redRange">范围0~255</span>
+		</div>
+		<div class="line-show">
+			<span>绿色值（G）：</span>
+			<span id="greenValue"></span>
+		</div>
+		
+	</div>
+	<div>
+		转换结果（右键下载保存）：
+		<img id="preview" width="50%" style="display: none;">
+	</div>
 	<!-- <img id="grey" width="50%" style="display: none;"> -->
 	
 </body>
 <script type="text/javascript">
+	// 一个幽灵，共产主义的幽灵，在全世界徘徊。
 	var imgDom = document.getElementById("preview")
-	var greyImg = document.getElementById("grey");
+	// var greyImg = document.getElementById("grey");
 	// 默认配色
-	// todo : 自己调色设置，文字生成图片，照片校正等 
+	// todo : 文字生成图片，照片校正等 
 	var blueFactor = 0.114;
 	var redFactor = 0.299;
 	var greenFactor = 0.587;
-	
+
+	var blueMax = 255;
+	var blueMin = 0;
+	var redMax = 255;
+	var redMin = 0;
+
+	var textColor = "#FF0000";
+	var greyValue = 76;
+	var bgBlue = 76;
+	var bgRed = 76;
+	var bgGreen = 76;
 
 	var urlData;
 	imgDom.onload = function(){
@@ -28,9 +83,11 @@
 	// greyImg.onload = function(){
 	// 	greyImg.style.display = 'block';
 	// }
-	// 二值化阈值
+	
+	// 图片二值化阈值
 	var threshold =160
 
+	// 上传图片
 	function getImageData() {
 		var resultFile = document.getElementById("upload").files[0];
         if (resultFile) {
@@ -43,15 +100,31 @@
                 dealImg()
             };
         }
-
-
 	}
 
-   	function dealImg(redValue, blueValue){
-   		//水平投影结果
+	// 图片处理
+   	function dealImg(){
+   		if(!urlData){
+   			alert('请先上传文件！')
+   			return
+   		}
+   		// 水平投影结果缓存
 		var horPrj = []
-		//间距高度阈值
+		// 间距高度阈值
 		var textMinHeight = 3
+
+		var bgGrey = bgRed * redFactor+ bgGreen * greenFactor + bgBlue * blueFactor 
+		console.log(bgGrey)
+		if(bgGrey.toFixed(2) != greyValue.toFixed(2)){
+			alert('背景颜色灰度值不准确！请重新设置！')
+			return
+		}
+
+		var textRed = Number(parseInt(textColor.slice(1,3),16));
+		var textGreen = Number(parseInt(textColor.slice(3,5),16))
+		var textBlue = Number(parseInt(textColor.slice(5,7),16))
+
+		//灰度值判断
 		Jimp.read(urlData).then(image => {
 			var index = 0
 			var temSum = 0
@@ -62,16 +135,16 @@
 					index = y;
 					temSum = 0
 				}
-				//水平投影统计+二值化换色
+				// 水平投影统计+二值化换色
 				if(this.bitmap.data[idx]<threshold){
 					temSum += 1
-					this.bitmap.data[idx] = 255
-					this.bitmap.data[idx+1] = 0
-					this.bitmap.data[idx+2] = 0
+					this.bitmap.data[idx] = textRed
+					this.bitmap.data[idx+1] = textGreen
+					this.bitmap.data[idx+2] = textBlue
 				}else{
-					this.bitmap.data[idx] = 76
-					this.bitmap.data[idx+1] = 77
-					this.bitmap.data[idx+2] = 76
+					this.bitmap.data[idx] = bgRed
+					this.bitmap.data[idx+1] = bgGreen
+					this.bitmap.data[idx+2] = bgBlue
 				}
 			})
 			var len_hp = horPrj.length;
@@ -93,7 +166,7 @@
 			image.getBase64(Jimp.MIME_JPEG, function(err, src){
 				imgDom.setAttribute("src", src);
 			});
-			//Jimp的灰度加权算法（查自源码）0.2126 *R + 0.7152 * G + 0.0722 * B, 与opencv有区别
+			// Jimp的灰度加权算法（查自源码）0.2126 *R + 0.7152 * G + 0.0722 * B, 与opencv有区别
 			// image.greyscale().getBase64(Jimp.MIME_JPEG, function(err, src){
 			// 	greyImg.setAttribute("src", src);
 			// });
@@ -103,7 +176,112 @@
 			alert('出错啦！比较可能是浏览器不支持')
 		});
    	}
+
+   	// 自行设定字体颜色
+   	function setTextColor(){
+   		textColor =  document.getElementById("textColor").value;
+   		var textRed = Number(parseInt(textColor.slice(1,3),16));
+		var textGreen = Number(parseInt(textColor.slice(3,5),16))
+		var textBlue = Number(parseInt(textColor.slice(5,7),16))
+		
+		greyValue = redFactor * textRed + greenFactor * textGreen + blueFactor * textBlue
+		if(greyValue<5){
+			alert("灰度值太小，调整空间有限！请选择新的颜色！")
+		}
+   		var greyDom = document.getElementById("greyValue")
+   		greyDom.innerHTML = greyValue.toFixed(2)
+
+   		// 根据灰度限定背景颜色的蓝色和红色范围
+   		var temBlueMax = (greyValue/blueFactor)<255?Math.round(greyValue/blueFactor):255
+   		document.getElementById("blueValue").max = temBlueMax
+   		document.getElementById("blueRange").innerHTML = "范围0~"+temBlueMax
+
+   		var temRedMax = (greyValue/redFactor)<255?Math.round(greyValue/redFactor):255
+   		document.getElementById("redValue").max = temRedMax
+   		document.getElementById("redRange").innerHTML = "范围0~"+temRedMax
+   		
+   	}
+
+   	// 调整背景蓝色值
+   	function setBgBlueValue(){
+   		if(greyValue<5){
+			alert("灰度值太小，调整空间有限！请选择新的颜色！")
+			return
+		}
+   		bgBlue  =  document.getElementById("blueValue").value;
+   		var tem = greyValue - blueFactor*bgBlue
+   		var temRedMin = Math.round((tem -255*greenFactor)/redFactor)
+   		temRedMin = temRedMin>0?temRedMin:0
+   		var temRedMax = Math.round(tem/redFactor)
+   		temRedMax = temRedMax<255?temRedMax:255
+   		document.getElementById("redRange").innerHTML = "范围"+temRedMin+'~'+temRedMax
+   		bgRed = bgRed<temRedMin?temRedMin:bgRed;
+   		bgRed = bgRed>temRedMax?temRedMax:bgRed;
+   		document.getElementById("redValue").value = bgRed;
+   		bgGreen = (tem - bgRed*redFactor)/greenFactor
+   		document.getElementById("greenValue").innerHTML = bgGreen;
+   		// 显示颜色
+   		document.getElementById("bgColor").style['background-color'] = `rgb(${bgRed},${bgGreen},${bgBlue})`
+   		document.getElementById("bgColor").style.display = 'block'
+   	}
+
+   	// 调整背景红色值
+   	function setBgRedValue(){
+   		if(greyValue<5){
+			alert("灰度值太小，调整空间有限！请选择新的颜色！")
+			return
+		}
+   		bgRed  =  document.getElementById("redValue").value;
+   		var tem = greyValue - redFactor*bgRed
+   		var temBlueMin = Math.round((tem -255*greenFactor)/blueFactor)
+   		temBlueMin = temBlueMin>0?temBlueMin:0
+   		var temBlueMax = Math.round(tem/blueFactor)
+   		temBlueMax = temBlueMax<255?temBlueMax:255
+   		document.getElementById("blueRange").innerHTML = "范围"+temBlueMin+'~'+temBlueMax
+   		bgBlue = bgBlue<temBlueMin?temBlueMin:bgBlue;
+   		bgBlue = bgBlue>temBlueMax?temBlueMax:bgBlue;
+   		document.getElementById("blueValue").value = bgBlue
+   		bgGreen = (tem - bgBlue*blueFactor)/greenFactor
+   		document.getElementById("greenValue").innerHTML = bgGreen;
+   		// 显示颜色
+   		document.getElementById("bgColor").style['background-color'] = `rgb(${bgRed},${bgGreen},${bgBlue})`
+   		document.getElementById("bgColor").style.display = 'block'
+   	}
 	
 
 </script>
+<style type="text/css">
+	html{
+
+	}
+	span{
+		margin-right: 5px;
+	}
+	input{
+		margin-right: 10px;
+	}
+	.color-board{
+		border: solid 1px #333;
+		width: 400px;
+	}
+	.line-show{
+		display: flex;
+		margin: 10px;
+	}
+	.defaultBgColor{
+		width: 80px;
+		height: 20px;
+		background-color: #4C4C4C
+	}
+	.defaultTextColor{
+		width: 80px;
+		height: 20px;
+		background-color: #FF0000
+	}
+	.bgColor{
+		width: 80px;
+		height: 20px;
+		display: none
+	}
+</style>
 </html>
