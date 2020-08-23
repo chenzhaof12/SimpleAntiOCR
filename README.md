@@ -7,6 +7,11 @@ Processing the images to make the text and the background have the same grayscal
 + 电子书截图
 + 长微博
 
+# 测试结果
++ 企鹅的APP识别无结果，ANTI成功；
++ 在线的OCR识别无结果，ANTI成功；
++ 渣浪仍有很大概率被夹，ANTI暂时失败；
+
 # 使用方法
 + 拉取代码后用浏览器打开index.html，上传要处理的图片即可
 
