@@ -10,12 +10,12 @@ Processing the images to make the text and the background have the same grayscal
 # 测试结果
 + 企鹅的APP识别无结果，ANTI成功；
 + 在线的OCR识别无结果，ANTI成功；
-+ 渣浪仍有很大概率被夹，ANTI暂时失败；
++ 渣浪上，如有非常敏感的字词，仍会被夹，ANTI暂时失败；
 
 # 使用方法
 + 拉取代码后用浏览器打开index.html，上传要处理的图片即可
 
 # 后继优化
-+ 自行调整颜色方案
++ 自行调整颜色方案（已完成）
 + 文字转图片
 + 照片类的文本方向校正（不一定会做）
