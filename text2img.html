@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="cn">
+  <head>
+    
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0;" />
+    <title>文本转图片/对抗文字检测处理</title>
+  </head>
+  <body>
+      <div>
+        <form>
+          输入你的文本：<a href="index.html">或直接转换图片</a><br>
+          <textarea rows="20" cols="70" id='text' placeholder="首行为标题" ></textarea><br>
+          选择字号：<input type='number' id='font_size' min="15" max="30" value="20"><br>
+          段落首行缩进再增加空格数：<input type='number' id='space_size' min="0" max="4" value="4"><br>
+        </form>
+        <div class="line-show"> 
+          <span>文字默认颜色:</span>
+          <div id="defaultTextColor" class="defaultTextColor"></div>
+          <span>背景默认颜色:</span>
+          <div id="defaultBgColor" class="defaultBgColor"></div>
+        </div>
+        <div class="color-board">
+          <div>
+            自行调色：
+            <button onclick="dealImg()">生成</button>
+          </div>
+          <div class="line-show">
+            <span>文字颜色：</span>
+            <input type="color" id="textColor" value="#FF0000" onchange="setTextColor();">
+            <span>灰度值：</span>
+            <span id="greyValue">76.24</span>
+          </div>
+          <div class="line-show">
+            背景颜色：
+            <div id="bgColor" class="bgColor"></div>
+          </div>
+          <div class="line-show">
+            <span>蓝色值（B）：</span>
+            <input type="number" id="blueValue" min="0" max="255" value="76" onchange="setBgBlueValue();">
+            <span id="blueRange">范围0~255</span>
+          </div>
+          <div class="line-show">
+            <span>红色值（R）：</span>
+            <input type="number" id="redValue" min="0" max="255" value="76" onchange="setBgRedValue();">
+            <span id="redRange">范围0~255</span>
+          </div>
+          <div class="line-show">
+            <span>绿色值（G）：</span>
+            <span id="greenValue"></span>
+          </div>
+          
+        </div>
+        <button onclick="createGraph()">提交</button>
+      </div>
+      <img id="image">
+     
+  </body>
+  <script type="text/javascript">
+    // 我们正在被做成表。
+    var blueFactor = 0.114;
+    var redFactor = 0.299;
+    var greenFactor = 0.587;
+
+    var blueMax = 255;
+    var blueMin = 0;
+    var redMax = 255;
+    var redMin = 0;
+
+    var textColor = "#FF0000";
+    var greyValue = 76;
+    var bgBlue = 76;
+    var bgRed = 76;
+    var bgGreen = 76;
+
+    // 自行设定字体颜色
+    function setTextColor(){
+      textColor =  document.getElementById("textColor").value;
+      var textRed = Number(parseInt(textColor.slice(1,3),16));
+      var textGreen = Number(parseInt(textColor.slice(3,5),16))
+      var textBlue = Number(parseInt(textColor.slice(5,7),16))
+      
+      greyValue = redFactor * textRed + greenFactor * textGreen + blueFactor * textBlue
+      if(greyValue<5){
+        alert("灰度值太小，调整空间有限！请选择新的颜色！")
+      }
+      var greyDom = document.getElementById("greyValue")
+      greyDom.innerHTML = greyValue.toFixed(2)
+
+      // 根据灰度限定背景颜色的蓝色和红色范围
+      var temBlueMax = (greyValue/blueFactor)<255?Math.round(greyValue/blueFactor):255
+      document.getElementById("blueValue").max = temBlueMax
+      document.getElementById("blueRange").innerHTML = "范围0~"+temBlueMax
+
+      var temRedMax = (greyValue/redFactor)<255?Math.round(greyValue/redFactor):255
+      document.getElementById("redValue").max = temRedMax
+      document.getElementById("redRange").innerHTML = "范围0~"+temRedMax
+      
+    }
+
+    // 调整背景蓝色值
+    function setBgBlueValue(){
+      if(greyValue<5){
+        alert("灰度值太小，调整空间有限！请选择新的颜色！")
+        return
+      }
+      bgBlue  =  document.getElementById("blueValue").value;
+      var tem = greyValue - blueFactor*bgBlue
+      var temRedMin = Math.round((tem -255*greenFactor)/redFactor)
+      temRedMin = temRedMin>0?temRedMin:0
+      var temRedMax = Math.round(tem/redFactor)
+      temRedMax = temRedMax<255?temRedMax:255
+      document.getElementById("redRange").innerHTML = "范围"+temRedMin+'~'+temRedMax
+      bgRed = bgRed<temRedMin?temRedMin:bgRed;
+      bgRed = bgRed>temRedMax?temRedMax:bgRed;
+      document.getElementById("redValue").value = bgRed;
+      bgGreen = (tem - bgRed*redFactor)/greenFactor
+      document.getElementById("greenValue").innerHTML = bgGreen;
+      // 显示颜色
+      document.getElementById("bgColor").style['background-color'] = `rgb(${bgRed},${bgGreen},${bgBlue})`
+      document.getElementById("bgColor").style.display = 'block'
+    }
+
+    // 调整背景红色值
+    function setBgRedValue(){
+        if(greyValue<5){
+        alert("灰度值太小，调整空间有限！请选择新的颜色！")
+        return
+      }
+      bgRed  =  document.getElementById("redValue").value;
+      var tem = greyValue - redFactor*bgRed
+      var temBlueMin = Math.round((tem -255*greenFactor)/blueFactor)
+      temBlueMin = temBlueMin>0?temBlueMin:0
+      var temBlueMax = Math.round(tem/blueFactor)
+      temBlueMax = temBlueMax<255?temBlueMax:255
+      document.getElementById("blueRange").innerHTML = "范围"+temBlueMin+'~'+temBlueMax
+      bgBlue = bgBlue<temBlueMin?temBlueMin:bgBlue;
+      bgBlue = bgBlue>temBlueMax?temBlueMax:bgBlue;
+      document.getElementById("blueValue").value = bgBlue
+      bgGreen = (tem - bgBlue*blueFactor)/greenFactor
+      document.getElementById("greenValue").innerHTML = bgGreen;
+      // 显示颜色
+      document.getElementById("bgColor").style['background-color'] = `rgb(${bgRed},${bgGreen},${bgBlue})`
+      document.getElementById("bgColor").style.display = 'block'
+    }
+    // rgb转为16进制表达（不知道英文名是什么，用hex表示)
+    function rgb2hex(r,g,b){
+      var r_hex = r.toString(16)
+      r_hex = r_hex.length==1?'0'+r_hex:r_hex
+      var g_hex = g.toString(16)
+      g_hex = g_hex.length==1?'0'+g_hex:g_hex
+      var b_hex = b.toString(16)
+      b_hex = b_hex.length==1?'0'+b_hex:b_hex
+      return '#'+r_hex+g_hex+b_hex
+    }
+
+    function createGraph(){
+      var text = document.getElementById("text").value;
+      var font_size = document.getElementById("font_size").value;
+      var space_size = document.getElementById("space_size").value;
+      var font_color = document.getElementById("textColor").value;
+      //背景三色转为16进制
+      
+      var back_color = rgb2hex(bgRed,Math.round(bgGreen),bgBlue)
+      var invert_back = rgb2hex(0,0,0)
+
+      var canvas
+      if(!document.getElementById("canvas")){
+        canvas = document.createElement("canvas");
+        canvas.id="canvas";
+      }else{
+        canvas = document.getElementById("canvas")
+      }
+      
+      
+      var box = document.getElementById("image");
+      
+      var ctx = canvas.getContext('2d');
+      canvas.width = 700;
+      var y = ctx.measure_text(text,Number(font_size), Number(space_size));
+      canvas.height = y;
+      ctx.fillStyle = back_color;
+      ctx.fillRect(0,0,700,y);
+      ctx.textBaseline='top';
+      ctx.deal_text(text,Number(font_size), Number(space_size), font_color,invert_back);
+      box.src = canvas.toDataURL()
+    };
+    CanvasRenderingContext2D.prototype.deal_text = function(text, font_size, space_size, font_color,invert_back){
+      //text = text.replace(/ /g,"");
+      //text = text.replace(/\n/g,"\n    ");
+      let context = this;
+      context.clearRect(0,0,700,context.height)
+      context.font = (font_size+5).toString()+"px 黑体";
+      context.fillStyle = font_color;
+      let canvas = context.canvas;
+      let lineHeight = parseInt(font_size*2);
+      //let final_texts = [];
+      let line = '';
+      let y = 10;
+      let space = '';
+      for(let i=0;i<space_size;i++){
+        space += ' ';
+      }
+      text = text.split("");
+      let title = true;
+      
+      for(let n=0; n<text.length;n++){
+        if(text[n]==='\n'){
+          context.fillStyle = font_color;
+          context.fillText(line,50,y);
+          context.fillStyle = invert_back;
+          if(title){
+            context.fillRect(10,Math.round(y+font_size*1.2),680,font_size);
+            context.font = font_size+"px 黑体";
+            y += (lineHeight+10);
+            title=false;
+          }else{
+            context.fillRect(10,y+font_size,680,font_size);
+            y += lineHeight+5;
+          }
+          line = space;
+          continue;
+        }
+        let tem_line = line+text[n];
+        let line_width = context.measureText(tem_line).width;
+        
+        if(line_width > 600 && n > 0 ){
+          context.fillStyle = font_color;
+          context.fillText(line,50,y);
+          context.fillStyle = invert_back;
+          if(title){
+            context.fillRect(10,Math.round(y+font_size*1.2),680,font_size);
+            line = text[n];
+            y += (lineHeight+5);
+          }else{
+            context.fillRect(10,y+font_size,680,font_size);
+            line = text[n];
+            y += lineHeight;
+          }
+        }else{
+          line = tem_line;
+        }
+      }
+      context.fillStyle = font_color;
+      context.fillText(line,50,y);
+      
+    };
+    CanvasRenderingContext2D.prototype.measure_text = function(text, font_size, space_size){
+      //text = text.replace(/ /g,"");
+      //text = text.replace(/\n/g,"\n    ");
+      let context = this;
+      context.font = (font_size+5).toString()+"px 黑体";
+      let canvas = context.canvas;
+      let lineHeight = parseInt(font_size*2);
+      //let final_texts = [];
+      let line = '';
+      let y = 10;
+      let space = '';
+      for(let i=0;i<space_size;i++){
+        space += ' ';
+      }
+      text = text.split("");
+      let title = true
+      for(let n=0; n<text.length;n++){
+        if(text[n]==='\n'){
+          if(title){
+            context.font = font_size+"px 黑体";
+            y += (lineHeight+10);
+            title=false;
+            line = space;
+            continue;
+          }else{
+            y += lineHeight+5;
+            line = space;
+            continue;
+          }
+        }
+        let tem_line = line+text[n];
+        let line_width = context.measureText(tem_line).width;
+        
+        if(line_width > 600 && n > 0 ){
+          if(title){
+            line = text[n];
+            y += (lineHeight+5);
+          }else{
+            line = text[n];
+            y += lineHeight;
+          }
+        }else{
+          line = tem_line;
+        }
+      }
+      return y+lineHeight;
+    };
+    // 但有一个幽灵正在全世界徘徊。
+  </script>
+  <style type="text/css">
+    .color-board{
+      border: solid 1px #333;
+      width: 400px;
+    }
+    .line-show{
+      display: flex;
+      margin: 10px;
+    }
+    .defaultBgColor{
+      width: 60px;
+      height: 20px;
+      background-color: #4C4C4C
+    }
+    .defaultTextColor{
+      width: 60px;
+      height: 20px;
+      background-color: #FF0000
+    }
+    .bgColor{
+      width: 60px;
+      height: 20px;
+      display: none
+    }
+  </style>
+</html>
