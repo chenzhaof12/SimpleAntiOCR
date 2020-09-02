@@ -3,7 +3,7 @@
 <head>
 	<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
 	<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0;" />
-	<title>ANTI TEXT DETECTIVE</title>
+	<title>ANTI TEXT DETECTIVE/对抗文字检测</title>
 	<script type="text/javascript" src="jimp.min.js"></script>
 </head>
 <body>
@@ -11,6 +11,7 @@
 		<span>上传需转换图片</span>
 		<input type="file" id="upload" accept="image/png, image/jpeg" onchange="getImageData();">
 	</div>
+	<a href="text2img.html">或将文字转为图片</a>
 	<div class="line-show"> 
 		<span>文字默认颜色:</span>
 		<div id="defaultTextColor" class="defaultTextColor"></div>
@@ -56,7 +57,8 @@
 	
 </body>
 <script type="text/javascript">
-	// 一个幽灵，共产主义的幽灵，在全世界徘徊。
+	// 我们正在被做成表。
+	
 	var imgDom = document.getElementById("preview")
 	// var greyImg = document.getElementById("grey");
 	// 默认配色
@@ -114,7 +116,7 @@
 		var textMinHeight = 3
 
 		var bgGrey = bgRed * redFactor+ bgGreen * greenFactor + bgBlue * blueFactor 
-		console.log(bgGrey)
+		//灰度值判断
 		if(bgGrey.toFixed(2) != greyValue.toFixed(2)){
 			alert('背景颜色灰度值不准确！请重新设置！')
 			return
@@ -124,7 +126,7 @@
 		var textGreen = Number(parseInt(textColor.slice(3,5),16))
 		var textBlue = Number(parseInt(textColor.slice(5,7),16))
 
-		//灰度值判断
+		
 		Jimp.read(urlData).then(image => {
 			var index = 0
 			var temSum = 0
@@ -154,7 +156,7 @@
 					temHeight += 1
 				}else{
 					if(temHeight>textMinHeight){
-						//上一段高度没有文字，反转干扰
+						//上一段高度没有文字，反转干扰（不加这个不行，还是会被识别出）
 						var imgTextCopy = image.clone()
 						imgTextCopy.crop( 5, i-temHeight, imgTextCopy.bitmap.width-10, temHeight ).invert();
 						image.blit(imgTextCopy, 5, i-temHeight);
@@ -248,7 +250,7 @@
    		document.getElementById("bgColor").style.display = 'block'
    	}
 	
-
+   	// 但有一个幽灵正在全世界徘徊。
 </script>
 <style type="text/css">
 	html{
@@ -269,17 +271,17 @@
 		margin: 10px;
 	}
 	.defaultBgColor{
-		width: 80px;
+		width: 60px;
 		height: 20px;
 		background-color: #4C4C4C
 	}
 	.defaultTextColor{
-		width: 80px;
+		width: 60px;
 		height: 20px;
 		background-color: #FF0000
 	}
 	.bgColor{
-		width: 80px;
+		width: 60px;
 		height: 20px;
 		display: none
 	}
