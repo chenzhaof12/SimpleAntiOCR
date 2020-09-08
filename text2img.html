@@ -159,9 +159,16 @@
       var font_size = document.getElementById("font_size").value;
       var space_size = document.getElementById("space_size").value;
       var font_color = document.getElementById("textColor").value;
-      //背景三色转为16进制
       
-      var back_color = rgb2hex(bgRed,Math.round(bgGreen),bgBlue)
+      //灰度值判断
+      var bgGrey = bgRed * redFactor+ bgGreen * greenFactor + bgBlue * blueFactor 
+      if(bgGrey.toFixed(2) != greyValue.toFixed(2)){
+        alert('背景颜色灰度值不准确！请重填蓝色值或红色值以计算准确的背景颜色！')
+        return
+      }
+
+      //背景三色转为16进制
+      var back_color = rgb2hex(Number(bgRed),Math.round(bgGreen),Number(bgBlue))
       var invert_back = rgb2hex(0,0,0)
 
       var canvas
